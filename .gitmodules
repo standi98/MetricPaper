@@ -1,0 +1,3 @@
+[submodule "LaTeXSetup"]
+	path = LaTeXSetup
+	url = https://github.com/standi98/LaTeXSetup

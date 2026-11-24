@@ -1,0 +1,7 @@
+# sources:
+#   zotero_export:
+#     path: /home/master/ZoteroCollector/extracted_data.csv
+#     filename: zotero_extracted_data.csv
+
+
+sources:
