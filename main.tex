@@ -7,16 +7,125 @@
 
 
 % ------- Preamble -------------------------------------------
-\pagenumbering{roman}
+% \pagenumbering{roman}
 
-\tableofcontents
+% \tableofcontents
 
 
 
 
 % ------ Sections ---------------------------------------------
 \pagenumbering{arabic}
+\section{Binned Accuracy}
+We start with a set of bin edges, \(\mathbf{b}\), that can either be defined using domain knowledge (for example Beufort scale) or fixed width on the binning feature.
 
+\begin{equation}
+    \mathbf{b} = (b_1 < b_2 \dots < b_k),\\ I_k = [b_{k-1}, bk),\quad k = 1,\dots K,\quad I_K = [b_{K-1}, B_K]
+\end{equation}
+
+or for fixed with
+
+\begin{equation}
+    K = \left\lceil \frac{b-a}{\Delta} \right\rceil,\quad b_k = a+\Delta k,\quad k = 0,1\dots K
+\end{equation}
+
+Then, we define a binning function that counts the edges we pass
+
+\begin{equation}
+    \beta(x) = 1 + \sum_{k=1}^{K}1\left[x \ge b_k\right]
+\end{equation}
+
+so that \(\beta(x)=k \Longleftrightarrow  x\in I_k \).
+
+To define the sets from the intervals
+
+\begin{equation}
+    \mathcal{S}_k = \left\{ i\in {1,\dots,n} : x^{(i)} \in I_k \right\},\quad
+    n_k = \left| \mathcal{S} \right|
+\end{equation}
+
+these statisfy
+
+\begin{equation}
+    \mathcal{S}_k \cap \mathcal{S}_{k'} = \varnothing (k \neq k'), \qquad
+    \bigcup_{k=1}^{K} \mathcal{S}_k = \{1, \dots, n\}, \qquad
+    \sum_{k=1}^{K} n_k = n
+\end{equation}
+
+This gives us a set of datasets, wich can be written on either set formatting
+
+\begin{equation}
+    \mathcal{D}_k = \left\{ \left(\mathbf{X}^(i), y^i \right) : i\in\mathcal{S}_k \right\},\quad
+    \mathcal{D} = \bigsqcup^K_{k=1}\mathcal{D}_k
+\end{equation}
+
+or on in matrix format
+
+\begin{equation}
+    \mathbf{X}_k = \mathbf{X}_{\mathcal{S}_k,:} \in \mathbb{R}^{n_k \times d}, \qquad
+    \mathbf{y}_k = \mathbf{y}_{\mathcal{S}_k} \in \mathbb{R}^{n_k}
+\end{equation}
+
+Then, we define a weight function \(\omega(x)\) for each \(x\). This can either be the same weight for each bin, or some custom function based on region importance. It can NOT be based on the count in the bin itself, that would defeat the point. The function should have the following signature
+
+\begin{equation}
+    \omega \in \mathcal{W} = \left\{ \omega : [a,b] \rightarrow [0,\inf], \int_{a}^{b} = 1 \right\}
+\end{equation}
+
+Then the weight for each bin is
+
+\begin{equation}
+    \pi_k = \int_{I_k}\omega
+\end{equation}
+
+For a weighting that is the same for each bin \(\omega(x)=1/\Delta_k \text{ on } I_k\) giving \(\pi_k = 1/K\). To guard against extremely low count bins we define a set of valid bins
+
+\begin{equation}
+    \mathcal{V} = \left\{ k:n_k \ge n_{min} \right\},\quad \lambda = \sum_{k \notin \mathcal{V}} \pi_k
+\end{equation}
+
+Given a metric with the following signature
+
+\begin{equation}
+    m_k = m\left(\{(y^{(i)}, \hat{y}^{(i)})\}_{i \in \mathcal{S}_k}\right)
+\end{equation}
+
+\emph{A fancy way of writing MAE, MSE, MPE etc.} We can now calculate a bin adjusted metric, wich is a weighted accuracy across the bins. This captures how the models performs across the feature space, and mitigates issues with imbalanced datasets. Possibly capturing overreliance on dense regions.
+
+\begin{equation}
+    M(\mathcal{D}) = \frac{1}{1-\lambda} \sum_{k\in\mathcal{V}}\pi_k m_k = \sum_{k\in\mathcal{V}}\tilde{\pi}~_k m_k,\quad
+    \tilde{\pi}_k = \frac{\pi_k}{\sum_{k'\in\mathcal{V}}\pi_{k'}}
+\end{equation}
+
+
+We name this a B-\emph{Metric}, so when we use \ac{MAE} as the base metric, \(M\) becomes B-\ac{MAE}.
+
+\todo[inline]{Prove mathematicaly how this score reduces if the model is reliant on dense areas.}
+
+\section{Dense reliance score}
+With B-\ac{MAE} we can make a metric for how reliant the model the model is on dense regions of the dataset. The goal is to be able to get a numerical measurment of this, without having to compare the models on the same measurment,
+
+First, define a reference model
+
+\begin{equation}
+    g(x) = median\left\{ y^{(i)}: i\in \mathcal{D}_{train} \right\}
+\end{equation}
+\todo[inline]{Evaluate weather a per bin median is better.}
+
+
+and the model to be evaluated \(f(x)\)
+
+
+
+Then we define the Binned - Skill Score, B-SS, as
+
+\begin{equation}
+    B-SS_{\text{MAE}} = 1 - \frac{B-MAE(f)}{B-MAE(g)}
+\end{equation}
+
+This gives a \(1\) if the evaluated is perfect. \(0\) if the model is no better than just knowning the median guess. And negative numbers is worse.
+
+\todo[inline]{Make an implementation on constructed data.}
 
 
 \printbibliography
